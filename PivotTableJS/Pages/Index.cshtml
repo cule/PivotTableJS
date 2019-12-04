@@ -1,0 +1,122 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page with Pivot";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Invoice List</h1>
+</div>
+
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.InvoiceList[0].InvoiceNumber)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.InvoiceList[0].Amount)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.InvoiceList[0].CostCategory)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.InvoiceList[0].Period)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.InvoiceList)
+        {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.InvoiceNumber)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Amount)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CostCategory)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Period)
+            </td>
+            <td></td>
+        </tr>
+        }
+    </tbody>
+</table>
+
+
+<script>
+    /////////
+    var myInvoiceDetails = [];
+    function drawPivot() {
+        console.log(`drawpivot`, myInvoiceDetails);
+        $(function () {
+
+            $("#pivotoutput").pivotUI(
+                myInvoiceDetails,
+                {
+                    rows: ["CostCategory"],
+                    cols: ["Period"],
+                    vals: ["Amount"],
+                    aggregatorName: "Sum"
+                }
+            );
+        });
+    }
+
+    function getPivot() {
+        return fetch('./Index?handler=InvoicePivotData',
+            {
+                method: 'get',
+                headers: {
+                    'Content-Type': 'application/json;charset=UTF-8'
+                }
+            })
+            .then(function (response) {
+                if (response.ok) {
+                    return response.text();
+                } else {                    
+                    throw Error('Response Not OK');
+                }
+            })
+            .then(function (text) {
+                try {
+                    return JSON.parse(text);
+                } catch (err) {                    
+                    throw Error('Method Not Found');
+                }
+            })
+            .then(function (responseJSON) {
+                myInvoiceDetails = responseJSON;                
+                drawPivot();
+            })
+    }
+
+    getPivot();
+</script>
+<div class="container">
+    <div>
+        <input type="button" class="btn-info" onclick="tableToExcel('pvtTable', 'PivotDownload')" value="Export to Excel">        
+    </div>
+    <div id="pivotoutput" style="margin: 30px;"></div>
+</div>
+
+<script type="text/javascript">
+    var tableToExcel = (function () {
+        var uri = 'data:application/vnd.ms-excel;base64,'
+            , template = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>{worksheet}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta http-equiv="content-type" content="text/plain; charset=UTF-8"/></head><body><table>{table}</table></body></html>'
+            , base64 = function (s) { return window.btoa(unescape(encodeURIComponent(s))) }
+            , format = function (s, c) { return s.replace(/{(\w+)}/g, function (m, p) { return c[p]; }) }
+        return function (table, name) {
+            if (!table.nodeType) table = document.getElementsByClassName(table)[0]
+            var ctx = { worksheet: name || 'Worksheet', table: table.innerHTML }
+            window.location.href = uri + base64(format(template, ctx))
+        }
+    })()
+</script>
+
+
